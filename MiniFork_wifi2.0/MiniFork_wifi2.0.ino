@@ -3,23 +3,27 @@
 #include <Arduino.h>
 
 #include <ESP32Servo.h> // by Kevin Harrington
-#include <ESPAsyncWebSrv.h> // by dvarrel
+#include <ESPAsyncWebServer.h>
 #include <iostream>
 #include <sstream>
 
-#if defined(ESP32)
-#include <AsyncTCP.h> // by dvarrel
+#ifdef ESP32
+#include <AsyncTCP.h>
 #include <WiFi.h>
 #elif defined(ESP8266)
-#include <ESPAsyncTCP.h> // by dvarrel
+#include <ESP8266WiFi.h>
+#include <ESPAsyncTCP.h>
+#elif defined(TARGET_RP2040) || defined(TARGET_RP2350) || defined(PICO_RP2040) || defined(PICO_RP2350)
+#include <RPAsyncTCP.h>
+#include <WiFi.h>
 #endif
 
 // defines
 
 #define steeringServoPin 23
 #define mastTiltServoPin 22
-#define cabLights 32
-#define auxLights 33
+// #define cabLights 32
+// #define auxLights 33
 
 #define mastMotor0 25  // Used for controlling auxiliary attachment movement
 #define mastMotor1 26  // Used for controlling auxiliary attachment movement
@@ -28,8 +32,8 @@
 
 #define leftMotor0 21   // Used for controlling the left motor movement
 #define leftMotor1 19   // Used for controlling the left motor movement
-#define rightMotor0 33  // Used for controlling the right motor movementc:\Users\JohnC\Desktop\SOLIDWORKS Connected.lnk
-#define rightMotor1 32  // Used for controlling the right motor movement
+#define rightMotor0 5  // Used for controlling the right motor movementc:\Users\JohnC\Desktop\SOLIDWORKS Connected.lnk
+#define rightMotor1 6  // Used for controlling the right motor movement
 
 // global constants
 
@@ -246,13 +250,14 @@ void setUpPinModes()
 
 void setup(void)
 {
-  setUpPinModes();
   Serial.begin(115200);
+  setUpPinModes();
 
-  WiFi.softAP(ssid );
-  IPAddress IP = WiFi.softAPIP();
-  Serial.print("AP IP address: ");
-  Serial.println(IP);
+  #ifndef CONFIG_IDF_TARGET_ESP32H2
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(ssid);
+  #endif
+
 
   server.on("/", HTTP_GET, handleRoot);
   server.onNotFound(handleNotFound);
@@ -261,7 +266,7 @@ void setup(void)
   server.addHandler(&wsCarInput);
 
   server.begin();
-  //Serial.println("HTTP server started");
+  Serial.println("HTTP server started");
 }
 
 void loop()
